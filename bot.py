@@ -12,48 +12,15 @@ BOT_TOKEN = os.environ["BOT_TOKEN"]
 CHANNEL_ID = os.environ["CHANNEL_ID"]
 
 
-def fetch_prices():
+def fetch_gold_price():
     with sync_playwright() as p:
         browser = p.chromium.launch()
         page = browser.new_page(locale="fa-IR", timezone_id="Asia/Tehran")
+        try:
+            page.goto(URL, wait_until="domcontentloaded", timeout=60000)
 
-        def read_visible_price(metal):
-            return page.locator("body").evaluate(
-                """(body, metal) => {
-                    const norm = s => s
-                      .replace(/[۰-۹]/g, d => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)))
-                      .replace(/[٠-٩]/g, d => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
-                      .replace(/[٬،]/g, ',')
-                      .replace(/\\s+/g, ' ')
-                      .trim();
-                    const numeric = s => /^[0-9][0-9,]*$/.test(norm(s));
-                    const labels = [...body.querySelectorAll('*')].filter(el => {
-                        if (el.children.length) return false;
-                        const t = norm(el.textContent);
-                        return t.includes('قیمت لحظه‌ای') &&
-                          t.includes('میلی‌گرم') && t.includes(metal);
-                    });
-                    for (const label of labels) {
-                        // Walk up from the label; the site has changed wrapper
-                        // classes before, so do not depend on a single CSS path.
-                        let parent = label;
-                        for (let depth = 0; parent && depth < 7; depth++, parent = parent.parentElement) {
-                            const values = [...parent.querySelectorAll('span,div,p,strong,b')]
-                              .filter(el => el.children.length === 0)
-                              .map(el => norm(el.textContent))
-                              .filter(numeric);
-                            if (values.length) return values[values.length - 1];
-                        }
-                    }
-                    return null;
-                }""",
-                metal,
-            )
-
-        def wait_for_price(metal, timeout=45000):
-            # Wait for the numeric price, not merely for its label to appear.
             page.wait_for_function(
-                """metal => {
+                """() => {
                     const norm = s => s
                       .replace(/[۰-۹]/g, d => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)))
                       .replace(/[٠-٩]/g, d => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
@@ -65,57 +32,53 @@ def fetch_prices():
                       el.children.length === 0 &&
                       norm(el.textContent).includes('قیمت لحظه‌ای') &&
                       norm(el.textContent).includes('میلی‌گرم') &&
-                      norm(el.textContent).includes(metal));
+                      norm(el.textContent).includes('طلا'));
                     return labels.some(label => {
                       let parent = label;
                       for (let depth = 0; parent && depth < 7; depth++, parent = parent.parentElement) {
                         if ([...parent.querySelectorAll('span,div,p,strong,b')]
-                          .some(el => el.children.length === 0 && isNumber(el.textContent))) {
-                          return true;
-                        }
+                          .some(el => el.children.length === 0 && isNumber(el.textContent))) return true;
                       }
                       return false;
                     });
                 }""",
-                arg=metal,
-                timeout=timeout,
+                timeout=45000,
             )
-            value = read_visible_price(metal)
-            if not value:
-                raise ValueError(f"Price label appeared but its numeric {metal} price did not: {URL}")
-            price = int(value.replace(",", ""))
-            if price <= 0:
-                raise ValueError(f"Invalid {metal} price: {value}")
-            return price
 
-        try:
-            page.goto(URL, wait_until="domcontentloaded", timeout=60000)
-            gold = wait_for_price("طلا")
-
-            # The silver quote is displayed after selecting the silver tab.
-            clicked = page.evaluate(
-                """() => {
-                    const norm = s => s.replace(/\\s+/g, ' ').trim();
-                    for (const selector of ['[role="tab"]', 'button', '[role="button"]', '[onclick]', 'a', 'div', 'span']) {
-                      const candidates = [...document.querySelectorAll(selector)]
-                        .filter(el => el.getClientRects().length &&
-                          norm(el.innerText || el.textContent) === 'نقره');
-                      const candidate = candidates.find(el => el.children.length < 3);
-                      if (candidate) {
-                        candidate.click();
-                        return true;
+            gold = page.locator("body").evaluate(
+                """body => {
+                    const norm = s => s
+                      .replace(/[۰-۹]/g, d => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)))
+                      .replace(/[٠-٩]/g, d => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
+                      .replace(/[٬،]/g, ',')
+                      .replace(/\\s+/g, ' ')
+                      .trim();
+                    const numeric = s => /^[0-9][0-9,]*$/.test(norm(s));
+                    const labels = [...body.querySelectorAll('*')].filter(el =>
+                      el.children.length === 0 &&
+                      norm(el.textContent).includes('قیمت لحظه‌ای') &&
+                      norm(el.textContent).includes('میلی‌گرم') &&
+                      norm(el.textContent).includes('طلا'));
+                    for (const label of labels) {
+                      let parent = label;
+                      for (let depth = 0; parent && depth < 7; depth++, parent = parent.parentElement) {
+                        const values = [...parent.querySelectorAll('span,div,p,strong,b')]
+                          .filter(el => el.children.length === 0)
+                          .map(el => norm(el.textContent))
+                          .filter(numeric);
+                        if (values.length) return values[values.length - 1];
                       }
                     }
-                    return false;
+                    return null;
                 }"""
             )
-            if not clicked:
-                raise ValueError("Could not find the visible silver tab on the public page")
-            silver = wait_for_price("نقره", timeout=30000)
-
-            print(f"Extracted public prices (per milligram): gold={gold}, silver={silver}")
-            return gold, silver
-
+            if not gold:
+                raise ValueError(f"Could not extract gold price from {URL}")
+            price = int(gold.replace(",", ""))
+            if price <= 0:
+                raise ValueError(f"Invalid gold price: {gold}")
+            print(f"Extracted public gold price (per milligram): {price}")
+            return price
         except Exception:
             print("Page URL:", page.url)
             print("Page title:", page.title())
@@ -151,15 +114,13 @@ def send_telegram_message(message):
 
 
 def main():
-    gold, silver = fetch_prices()
+    gold = fetch_gold_price()
     now = datetime.now(ZoneInfo("Asia/Tehran"))
     timestamp = now.strftime("%Y-%m-%d | %H:%M:%S")
-
-    # 258,500 rials per mg = 25,850,000 tomans per gram = 25.85 million tomans.
     gold_million_tomans = gold / 10_000
     gold_display = f"{gold_million_tomans:.2f}"
     message = (
-        "🪙 <b>قیمت لحظه‌ای طلا و نقره دیجی‌کالا</b>\n\n"
+        "🪙 <b>قیمت لحظه‌ای طلای دیجی‌کالا</b>\n\n"
         f"🟡 <b>طلا</b> — هر ۱ میلی‌گرم\n"
         f"<code>{gold:,}</code> ریال\n"
         f"({gold_display} M)\n\n"
@@ -168,7 +129,7 @@ def main():
         "منبع: دیجی‌کالا</a>"
     )
     send_telegram_message(message)
-    print(f"Published successfully: gold={gold}, silver={silver}")
+    print(f"Published successfully: gold={gold}")
 
 
 if __name__ == "__main__":
