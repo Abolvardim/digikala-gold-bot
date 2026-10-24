@@ -1,4 +1,5 @@
 name: Digikala Gold Prices
+# Scheduled price publishing; keep this workflow on the default branch (main).
 
 on:
   schedule:
