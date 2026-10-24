@@ -140,6 +140,14 @@ def send_telegram_message(message):
     data = response.json()
     if not data.get("ok"):
         raise RuntimeError(f"Telegram API error: {data}")
+    result = data.get("result", {})
+    chat = result.get("chat", {})
+    print(
+        "Telegram accepted message: "
+        f"destination_type={chat.get('type')}, "
+        f"destination_id={chat.get('id')}, "
+        f"message_id={result.get('message_id')}"
+    )
 
 
 def main():
@@ -148,12 +156,12 @@ def main():
     timestamp = now.strftime("%Y-%m-%d | %H:%M:%S")
 
     message = (
-        "🪙 <b>قیمت لحظه‌ای طلا و نقره دیجی‌کالا</b>\\n\\n"
-        f"🟡 <b>طلا</b> — هر ۱ میلی‌گرم\\n"
-        f"<code>{gold:,}</code> ریال\\n\\n"
-        f"⚪ <b>نقره</b> — هر ۱ میلی‌گرم\\n"
-        f"<code>{silver:,}</code> ریال\\n\\n"
-        f"🕒 آخرین بررسی: {timestamp}\\n"
+        "🪙 <b>قیمت لحظه‌ای طلا و نقره دیجی‌کالا</b>\n\n"
+        f"🟡 <b>طلا</b> — هر ۱ میلی‌گرم\n"
+        f"<code>{gold:,}</code> ریال\n\n"
+        f"⚪ <b>نقره</b> — هر ۱ میلی‌گرم\n"
+        f"<code>{silver:,}</code> ریال\n\n"
+        f"🕒 آخرین بررسی: {timestamp}\n"
         '<a href="https://www.digikala.com/wealth/landing/">'
         "منبع: دیجی‌کالا</a>"
     )
