@@ -3,8 +3,8 @@ name: Digikala Gold Prices
 
 on:
   schedule:
-    # Avoid minute 0, when GitHub Actions scheduled jobs are more likely to be delayed.
-    - cron: "2-59/5 * * * *"
+    # Offset the schedule to resync GitHub's scheduler registration.
+    - cron: "7-59/10 * * * *"
   workflow_dispatch:
 
 permissions:
