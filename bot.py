@@ -26,62 +26,83 @@ def fetch_prices():
                       .replace(/[٬،]/g, ',')
                       .replace(/\\s+/g, ' ')
                       .trim();
-                    const spans = [...body.querySelectorAll('span')];
-                    const label = spans.find(s => {
-                        const t = norm(s.textContent);
+                    const numeric = s => /^[0-9][0-9,]*$/.test(norm(s));
+                    const labels = [...body.querySelectorAll('*')].filter(el => {
+                        if (el.children.length) return false;
+                        const t = norm(el.textContent);
                         return t.includes('قیمت لحظه‌ای') &&
                           t.includes('میلی‌گرم') && t.includes(metal);
                     });
-                    if (!label) return null;
-
-                    const row = label.closest(
-                      'div.flex.justify-between.items-center.mb-5'
-                    );
-                    if (!row) return null;
-                    const values = [...row.querySelectorAll('span')]
-                      .map(s => norm(s.textContent))
-                      .filter(s => /^[0-9][0-9,]*$/.test(s));
-                    return values.length ? values[values.length - 1] : null;
+                    for (const label of labels) {
+                        // Walk up from the label; the site has changed wrapper
+                        // classes before, so do not depend on a single CSS path.
+                        let parent = label;
+                        for (let depth = 0; parent && depth < 7; depth++, parent = parent.parentElement) {
+                            const values = [...parent.querySelectorAll('span,div,p,strong,b')]
+                              .filter(el => el.children.length === 0)
+                              .map(el => norm(el.textContent))
+                              .filter(numeric);
+                            if (values.length) return values[values.length - 1];
+                        }
+                    }
+                    return null;
                 }""",
                 metal,
             )
 
-        def parse_price(value, name):
+        def wait_for_price(metal, timeout=45000):
+            # Wait for the numeric price, not merely for its label to appear.
+            page.wait_for_function(
+                """metal => {
+                    const norm = s => s
+                      .replace(/[۰-۹]/g, d => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)))
+                      .replace(/[٠-٩]/g, d => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
+                      .replace(/[٬،]/g, ',')
+                      .replace(/\\s+/g, ' ')
+                      .trim();
+                    const isNumber = s => /^[0-9][0-9,]*$/.test(norm(s));
+                    const labels = [...document.querySelectorAll('*')].filter(el =>
+                      el.children.length === 0 &&
+                      norm(el.textContent).includes('قیمت لحظه‌ای') &&
+                      norm(el.textContent).includes('میلی‌گرم') &&
+                      norm(el.textContent).includes(metal));
+                    return labels.some(label => {
+                      let parent = label;
+                      for (let depth = 0; parent && depth < 7; depth++, parent = parent.parentElement) {
+                        if ([...parent.querySelectorAll('span,div,p,strong,b')]
+                          .some(el => el.children.length === 0 && isNumber(el.textContent))) {
+                          return true;
+                        }
+                      }
+                      return false;
+                    });
+                }""",
+                arg=metal,
+                timeout=timeout,
+            )
+            value = read_visible_price(metal)
             if not value:
-                raise ValueError(f"Could not find the visible {name} price on {URL}")
+                raise ValueError(f"Price label appeared but its numeric {metal} price did not: {URL}")
             price = int(value.replace(",", ""))
             if price <= 0:
-                raise ValueError(f"Invalid {name} price: {value}")
+                raise ValueError(f"Invalid {metal} price: {value}")
             return price
 
         try:
             page.goto(URL, wait_until="domcontentloaded", timeout=60000)
+            gold = wait_for_price("طلا")
 
-            # The landing page initially selects gold. Read it first.
-            page.wait_for_function(
-                """() => [...document.querySelectorAll('span')].some(s =>
-                    s.textContent.includes('قیمت لحظه‌ای') &&
-                    s.textContent.includes('میلی‌گرم') &&
-                    s.textContent.includes('طلا'))""",
-                timeout=45000,
-            )
-            gold = parse_price(read_visible_price("طلا"), "gold")
-
-            # Silver is a separate tab; its price label is not present until
-            # that tab is selected. Click the actual tab/button, not any
-            # unrelated mention of silver elsewhere on the page.
+            # The silver quote is displayed after selecting the silver tab.
             clicked = page.evaluate(
                 """() => {
                     const norm = s => s.replace(/\\s+/g, ' ').trim();
-                    const selectors = [
-                      '[role="tab"]', 'button', '[role="button"]', '[onclick]'
-                    ];
-                    for (const selector of selectors) {
+                    for (const selector of ['[role="tab"]', 'button', '[role="button"]', '[onclick]', 'a', 'div', 'span']) {
                       const candidates = [...document.querySelectorAll(selector)]
                         .filter(el => el.getClientRects().length &&
                           norm(el.innerText || el.textContent) === 'نقره');
-                      if (candidates.length) {
-                        candidates[0].click();
+                      const candidate = candidates.find(el => el.children.length < 3);
+                      if (candidate) {
+                        candidate.click();
                         return true;
                       }
                     }
@@ -90,15 +111,7 @@ def fetch_prices():
             )
             if not clicked:
                 raise ValueError("Could not find the visible silver tab on the public page")
-
-            page.wait_for_function(
-                """() => [...document.querySelectorAll('span')].some(s =>
-                    s.textContent.includes('قیمت لحظه‌ای') &&
-                    s.textContent.includes('میلی‌گرم') &&
-                    s.textContent.includes('نقره'))""",
-                timeout=15000,
-            )
-            silver = parse_price(read_visible_price("نقره"), "silver")
+            silver = wait_for_price("نقره", timeout=30000)
 
             print(f"Extracted public prices (per milligram): gold={gold}, silver={silver}")
             return gold, silver
@@ -106,7 +119,7 @@ def fetch_prices():
         except Exception:
             print("Page URL:", page.url)
             print("Page title:", page.title())
-            print("Page text (first 3500 chars):", page.locator("body").inner_text()[:3500])
+            print("Page text (first 5000 chars):", page.locator("body").inner_text()[:5000])
             raise
         finally:
             browser.close()
@@ -135,12 +148,12 @@ def main():
     timestamp = now.strftime("%Y-%m-%d | %H:%M:%S")
 
     message = (
-        "🪙 <b>قیمت لحظه‌ای طلا و نقره دیجی‌کالا</b>\n\n"
-        f"🟡 <b>طلا</b> — هر ۱ میلی‌گرم\n"
-        f"<code>{gold:,}</code> ریال\n\n"
-        f"⚪ <b>نقره</b> — هر ۱ میلی‌گرم\n"
-        f"<code>{silver:,}</code> ریال\n\n"
-        f"🕒 آخرین بررسی: {timestamp}\n"
+        "🪙 <b>قیمت لحظه‌ای طلا و نقره دیجی‌کالا</b>\\n\\n"
+        f"🟡 <b>طلا</b> — هر ۱ میلی‌گرم\\n"
+        f"<code>{gold:,}</code> ریال\\n\\n"
+        f"⚪ <b>نقره</b> — هر ۱ میلی‌گرم\\n"
+        f"<code>{silver:,}</code> ریال\\n\\n"
+        f"🕒 آخرین بررسی: {timestamp}\\n"
         '<a href="https://www.digikala.com/wealth/landing/">'
         "منبع: دیجی‌کالا</a>"
     )
