@@ -1,4 +1,3 @@
-
 name: Digikala Gold Prices
 
 on:
@@ -37,4 +36,5 @@ jobs:
         env:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
           CHANNEL_ID: ${{ secrets.CHANNEL_ID }}
+          DIGIKALA_STORAGE_STATE_B64: ${{ secrets.DIGIKALA_STORAGE_STATE_B64 }}
         run: python bot.py
