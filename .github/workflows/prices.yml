@@ -32,9 +32,8 @@ jobs:
           pip install -r requirements.txt
           python -m playwright install --with-deps chromium
 
-      - name: Fetch prices and publish to Telegram
+      - name: Fetch public prices and publish to Telegram
         env:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
           CHANNEL_ID: ${{ secrets.CHANNEL_ID }}
-          DIGIKALA_STORAGE_STATE_B64: ${{ secrets.DIGIKALA_STORAGE_STATE_B64 }}
         run: python bot.py
