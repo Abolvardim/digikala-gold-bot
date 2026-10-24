@@ -155,12 +155,14 @@ def main():
     now = datetime.now(ZoneInfo("Asia/Tehran"))
     timestamp = now.strftime("%Y-%m-%d | %H:%M:%S")
 
+    # 258,500 rials per mg = 25,850,000 tomans per gram = 25.85 million tomans.
+    gold_million_tomans = gold / 10_000
+    gold_display = f"{gold_million_tomans:.2f}"
     message = (
         "🪙 <b>قیمت لحظه‌ای طلا و نقره دیجی‌کالا</b>\n\n"
         f"🟡 <b>طلا</b> — هر ۱ میلی‌گرم\n"
-        f"<code>{gold:,}</code> ریال\n\n"
-        f"⚪ <b>نقره</b> — هر ۱ میلی‌گرم\n"
-        f"<code>{silver:,}</code> ریال\n\n"
+        f"<code>{gold:,}</code> ریال\n"
+        f"({gold_display} M)\n\n"
         f"🕒 آخرین بررسی: {timestamp}\n"
         '<a href="https://www.digikala.com/wealth/landing/">'
         "منبع: دیجی‌کالا</a>"
