@@ -135,12 +135,12 @@ def main():
     timestamp = now.strftime("%Y-%m-%d | %H:%M:%S")
 
     message = (
-        "🪙 <b>قیمت لحظه‌ای طلا و نقره دیجی‌کالا</b>\\n\\n"
-        f"🟡 <b>طلا</b> — هر ۱ میلی‌گرم\\n"
-        f"<code>{gold:,}</code> ریال\\n\\n"
-        f"⚪ <b>نقره</b> — هر ۱ میلی‌گرم\\n"
-        f"<code>{silver:,}</code> ریال\\n\\n"
-        f"🕒 آخرین بررسی: {timestamp}\\n"
+        "🪙 <b>قیمت لحظه‌ای طلا و نقره دیجی‌کالا</b>\n\n"
+        f"🟡 <b>طلا</b> — هر ۱ میلی‌گرم\n"
+        f"<code>{gold:,}</code> ریال\n\n"
+        f"⚪ <b>نقره</b> — هر ۱ میلی‌گرم\n"
+        f"<code>{silver:,}</code> ریال\n\n"
+        f"🕒 آخرین بررسی: {timestamp}\n"
         '<a href="https://www.digikala.com/wealth/landing/">'
         "منبع: دیجی‌کالا</a>"
     )
