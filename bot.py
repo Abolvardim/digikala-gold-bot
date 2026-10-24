@@ -22,6 +22,7 @@ def normalize_digits(text):
     return text.translate(table).replace("٬", ",").replace("،", ",")
 
 
+
 def fetch_prices():
     with sync_playwright() as p:
         browser = p.chromium.launch()
@@ -31,69 +32,99 @@ def fetch_prices():
         )
 
         try:
-            page.goto(URL, wait_until="domcontentloaded", timeout=60000)
+            page.goto(
+                URL,
+                wait_until="domcontentloaded",
+                timeout=60000
+            )
 
-            # Wait for the two price labels and their numeric values.
             page.wait_for_function(
                 """() => {
                     const norm = s => s
-                      .replace(/[۰-۹]/g, d =>
-                        String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)))
-                      .replace(/[٠-٩]/g, d =>
-                        String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)));
-                    const nodes = [...document.querySelectorAll('div')];
-                    return nodes.some(el => {
-                      const t = norm(el.innerText || '');
-                      return t.includes('طلای ۱۸ عیار') &&
-                             t.includes('نقره ۹۹۹') &&
-                             /طلای ۱۸ عیار\\s*[\\d,٬]+/.test(t) &&
-                             /نقره ۹۹۹\\s*[\\d,٬]+/.test(t);
-                    });
+                      .replace(/[۰-۹]/g,
+                        d => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)))
+                      .replace(/[٠-٩]/g,
+                        d => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
+                      .trim();
+
+                    const spans = [...document.querySelectorAll('span')];
+
+                    function getPrice(label) {
+                        const el = spans.find(
+                            s => norm(s.textContent) === label
+                        );
+                        if (!el || !el.parentElement) return null;
+
+                        const values = [
+                            ...el.parentElement.querySelectorAll('span')
+                        ]
+                        .map(s => norm(s.textContent))
+                        .filter(s => /^\\d[\\d,]*$/.test(s));
+
+                        return values.length ? values[values.length - 1] : null;
+                    }
+
+                    return Boolean(
+                        getPrice('طلای 18 عیار') &&
+                        getPrice('نقره 999')
+                    );
                 }""",
                 timeout=45000
             )
 
-            # Find the smallest container holding both labels and prices.
-            card_text = page.locator("body").evaluate(
+            prices = page.locator("body").evaluate(
                 """body => {
                     const norm = s => s
-                      .replace(/[۰-۹]/g, d =>
-                        String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)))
-                      .replace(/[٠-٩]/g, d =>
-                        String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)));
-                    const matches = [...body.querySelectorAll('div')]
-                      .filter(el => {
-                        const t = norm(el.innerText || '');
-                        return t.includes('طلای ۱۸ عیار') &&
-                               t.includes('نقره ۹۹۹') &&
-                               /طلای ۱۸ عیار\\s*[\\d,٬]+/.test(t) &&
-                               /نقره ۹۹۹\\s*[\\d,٬]+/.test(t);
-                      });
-                    matches.sort((a, b) =>
-                      a.innerText.length - b.innerText.length);
-                    return matches.length ? matches[0].innerText : '';
+                      .replace(/[۰-۹]/g,
+                        d => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)))
+                      .replace(/[٠-٩]/g,
+                        d => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
+                      .trim();
+
+                    const spans = [...body.querySelectorAll('span')];
+
+                    function getPrice(label) {
+                        const el = spans.find(
+                            s => norm(s.textContent) === label
+                        );
+                        if (!el || !el.parentElement) return null;
+
+                        const values = [
+                            ...el.parentElement.querySelectorAll('span')
+                        ]
+                        .map(s => norm(s.textContent))
+                        .filter(s => /^\\d[\\d,]*$/.test(s));
+
+                        return values.length ? values[values.length - 1] : null;
+                    }
+
+                    return {
+                        gold: getPrice('طلای 18 عیار'),
+                        silver: getPrice('نقره 999')
+                    };
                 }"""
             )
 
-            card_text = normalize_digits(card_text)
+            def parse_price(value, name):
+                if not value:
+                    raise ValueError(f"Price not found: {name}")
 
-            def extract(label):
-                pattern = re.escape(label) + r"\s*[:：]?\s*([\d,]+)"
-                match = re.search(pattern, card_text)
-                if not match:
-                    raise ValueError(f"Price not found for {label}")
-                value = int(match.group(1).replace(",", ""))
-                if value <= 0:
-                    raise ValueError(f"Invalid price for {label}")
-                return value
+                price = int(value.replace(",", ""))
 
-            gold = extract("طلای 18 عیار")
-            silver = extract("نقره 999")
+                if price <= 0:
+                    raise ValueError(f"Invalid price: {name}")
 
+                return price
+
+            gold = parse_price(prices["gold"], "gold")
+            silver = parse_price(prices["silver"], "silver")
+
+            print(f"Extracted prices: gold={gold}, silver={silver}")
             return gold, silver
 
         finally:
             browser.close()
+
 
 
 def send_telegram_message(message):
