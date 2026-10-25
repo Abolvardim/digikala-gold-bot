@@ -220,15 +220,15 @@ def main():
             )
 
     message = (
-        "🪙 <b>قیمت لحظه‌ای طلای دیجی‌کالا</b>\n\n"
-        f"🟡 <b>طلا</b> — هر ۱ میلی‌گرم\n"
+        " <b>قیمت لحظه‌ای طلای دیجی‌کالا</b>\n\n"
+        f" <b>طلا</b> — هر ۱ میلی‌گرم\n"
         f"<code>{gold:,}</code> ریال\n"
         f"({gold_display} M)\n"
     )
     if target_lines:
         message += "\n" + "\n".join(target_lines) + "\n"
     message += (
-        f"\n🕒 آخرین بررسی: {timestamp}\n"
+        f"\n آخرین بررسی: {timestamp}\n"
         '<a href="https://www.digikala.com/wealth/landing/">'
         "منبع: دیجی‌کالا</a>"
     )
