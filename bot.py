@@ -213,14 +213,14 @@ def main():
         key = f"{target:.2f}"
         if current_state[key]:
             marker = "🔔" if target in newly_triggered else "🟢"
-            status = "هشدار تازه فعال شد" if target in newly_triggered else "هنوز زیر"
+            status = "هشدار تازه" if target in newly_triggered else "هنوز زیر"
             target_lines.append(
-                f"{marker} <b>هدف {target:g} M:</b> {status} (≤ {target:g} میلیون تومان)"
+                f"{marker} <b> {target:g} M:</b> {status} (≤ {target:g} میلیون تومان)"
                 
             )
 
     message = (
-        " <b>قیمت لحظه‌ای طلای دیجی‌کالا</b>\n\n"
+        "🟡 <b>قیمت لحظه‌ای طلای دیجی‌کالا</b>\n\n"
         f" <b>طلا</b> — هر ۱ میلی‌گرم\n"
         f"<code>{gold:,}</code> ریال\n"
         f"({gold_display} M)\n"
