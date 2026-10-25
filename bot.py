@@ -213,10 +213,10 @@ def main():
         key = f"{target:.2f}"
         if current_state[key]:
             marker = "🔔" if target in newly_triggered else "🟢"
-            status = "هشدار تازه فعال شد" if target in newly_triggered else "محدوده هدف فعال است"
+            status = "هشدار تازه فعال شد" if target in newly_triggered else "هنوز زیر"
             target_lines.append(
-                f"{marker} <b>هدف {target:g} M:</b> {status} \n"
-                f"(≤ {target:g} میلیون تومان)"
+                f"{marker} <b>هدف {target:g} M:</b> {status} (≤ {target:g} میلیون تومان)"
+                
             )
 
     message = (
