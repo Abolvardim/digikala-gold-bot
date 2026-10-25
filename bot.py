@@ -224,11 +224,11 @@ def main():
         f"طلا</b> — هر ۱ میلی‌گرم\n"
         f"<b><code>{gold:,}</code> ریال</b>\n"
         f"<b>(<code>{gold_display}</code> M)</b>\n"
-        "---------------------------\n"
+        "-----------------\n"
     )
     if target_lines:
         message += "\n".join(target_lines) + "\n"
-        message += "---------------------------\n"
+        message += "-----------------\n"
     message += (
         f"\n آخرین بررسی: {timestamp}\n"
         '<a href="https://www.digikala.com/wealth/landing/">'
