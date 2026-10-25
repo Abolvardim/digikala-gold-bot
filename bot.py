@@ -220,10 +220,10 @@ def main():
             )
 
     message = (
-        "🟡 <b>قیمت لحظه‌ای طلای دیجی‌کالا</b>\n\n"
-        f" <b>طلا</b> — هر ۱ میلی‌گرم\n"
-        f"<code>{gold:,}</code> ریال\n"
-        f"({gold_display} M)\n"
+        "🟡 <b>قیمت لحظه‌ای طلای دیجی‌کالا\n\n"
+        f"طلا</b> — هر ۱ میلی‌گرم\n"
+        f"<b><code>{gold:,}</code> ریال</b>\n"
+        f"<b>(<code>{gold_display}</code> M)</b>\n"
     )
     if target_lines:
         message += "\n" + "\n".join(target_lines) + "\n"
