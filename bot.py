@@ -230,7 +230,7 @@ def main():
     message += (
         f"\n آخرین بررسی: {timestamp}\n"
         '<a href="https://www.digikala.com/wealth/landing/">'
-        "منبع: دیجی‌کالا</a>"
+        " دیجی‌کالا</a>"
     )
 
     message_id = send_telegram_message(message)
