@@ -20,7 +20,7 @@ STATE_FILE = ".price_alert_state.json"
 
 # Price targets in millions of tomans per gram of melted gold.
 # Edit this list to add/remove your own buying targets.
-PRICE_TARGETS_MILLION_TOMANS = [26.0, 25.5]
+PRICE_TARGETS_MILLION_TOMANS = [26.0, 25.5, 25.0]
 
 
 def github_headers():
@@ -212,10 +212,11 @@ def main():
     for target in sorted(PRICE_TARGETS_MILLION_TOMANS):
         key = f"{target:.2f}"
         if current_state[key]:
-            marker = "🚨" if target in newly_triggered else "🎯"
+            marker = "🔔" if target in newly_triggered else "🟢"
             status = "هشدار تازه فعال شد" if target in newly_triggered else "محدوده هدف فعال است"
             target_lines.append(
-                f"{marker} <b>هدف {target:g} M:</b> {status} (≤ {target:g} میلیون تومان)"
+                f"{marker} <b>هدف {target:g} M:</b> {status} \n"
+                f"(≤ {target:g} میلیون تومان)
             )
 
     message = (
