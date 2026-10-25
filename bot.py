@@ -216,7 +216,7 @@ def main():
             status = "هشدار تازه فعال شد" if target in newly_triggered else "محدوده هدف فعال است"
             target_lines.append(
                 f"{marker} <b>هدف {target:g} M:</b> {status} \n"
-                f"(≤ {target:g} میلیون تومان)
+                f"(≤ {target:g} میلیون تومان)"
             )
 
     message = (
